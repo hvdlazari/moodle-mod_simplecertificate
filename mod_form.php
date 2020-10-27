@@ -63,6 +63,12 @@ class mod_simplecertificate_mod_form extends moodleform_mod {
         $mform->addRule('certificatetext', get_string('error'), 'required', null, 'client');
         $mform->addHelpButton('certificatetext', 'certificatetext', 'simplecertificate');
 
+        $mform->addElement('selectyesno', 'enablehtmlrender', get_string('enablehtmlrender', 'simplecertificate'));
+        $mform->addHelpButton('enablehtmlrender', 'enablehtmlrender', 'simplecertificate');
+
+        $mform->addElement('textarea', 'rawscssrender', get_string('rawscssrender', 'simplecertificate'));
+        $mform->addHelpButton('rawscssrender', 'rawscssrender', 'simplecertificate');
+
         // Certificate Width.
         $mform->addElement('text', 'width', get_string('width', 'simplecertificate'), array('size' => '5'));
         $mform->setType('width', PARAM_INT);

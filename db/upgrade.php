@@ -435,28 +435,27 @@ function xmldb_simplecertificate_upgrade($oldversion = 0) {
         // Simplecertificate savepoint reached.
         upgrade_mod_savepoint(true, 2017013001, 'simplecertificate');
     }
-    if ($oldversion < 2020091500) {
 
-        // Define index course (not unique) to be added to simplecertificate.
+    if ($oldversion < 2020101900) {
+
+        // Define fieldsto be added to simplecertificate.
         $table = new xmldb_table('simplecertificate');
-        $index = new xmldb_index('course', XMLDB_INDEX_NOTUNIQUE, ['course']);
 
-        // Conditionally launch add index course.
-        if (!$dbman->index_exists($table, $index)) {
-            $dbman->add_index($table, $index);
+        $field = new xmldb_field('enablehtmlrender', XMLDB_TYPE_INTEGER, '1', null, XMLDB_NOTNULL, null, '0', 'certificatetextformat');
+
+        // Conditionally launch add field enablehtmlrender.
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
         }
 
-        // Define index certificate_user (not unique) to be added to simplecertificate_issues.
-        $table = new xmldb_table('simplecertificate_issues');
-        $index = new xmldb_index('certificate_user', XMLDB_INDEX_NOTUNIQUE, ['certificateid', 'userid']);
+        $field = new xmldb_field('rawscssrender', XMLDB_TYPE_TEXT, null, null, null, null, null, 'enablehtmlrender');
 
-        // Conditionally launch add index certificate_user.
-        if (!$dbman->index_exists($table, $index)) {
-            $dbman->add_index($table, $index);
+        // Conditionally launch add field secondpagetext.
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
         }
 
-        // Simplecertificate savepoint reached.
-        upgrade_mod_savepoint(true, 2020091500, 'simplecertificate');
+        upgrade_mod_savepoint(true, 2020101900, 'simplecertificate');
     }
     return true;
 }
