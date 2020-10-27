@@ -1028,8 +1028,15 @@ class simplecertificate {
 
         // Writing text.
         $pdf->SetXY($this->get_instance()->certificatetextx, $this->get_instance()->certificatetexty);
-        $pdf->writeHTMLCell(0, 0, '', '', $this->get_certificate_text($issuecert, $this->get_instance()->certificatetext), 0, 0, 0,
+
+        if (isset($this->get_instance()->enablehtmlrender) && $this->get_instance()->enablehtmlrender) {
+            $html = $this->get_certificate_html_text($issuecert, $this->get_instance()->certificatetext, $this->get_instance()->rawscssrender);
+            $pdf->writeHTML($html);
+        } else {
+            $pdf->writeHTMLCell(0, 0, '', '', $this->get_certificate_text($issuecert, $this->get_instance()->certificatetext), 0, 0, 0,
                             true, 'C');
+        }
+
 
         // Print QR code in first page (if enable).
         if (!empty($this->get_instance()->qrcodefirstpage) && !empty($this->get_instance()->printqrcode)) {
@@ -1473,6 +1480,146 @@ class simplecertificate {
         // Clear not setted  textmark.
         $certtext = preg_replace('[\{(.*)\}]', "", $certtext);
         return $this->remove_links(format_text($certtext, FORMAT_MOODLE));
+    }
+
+    protected function get_certificate_html_text($issuecert, $certtext = null, $rawscss = null) {
+        global $DB, $CFG;
+
+        $user = get_complete_user_data('id', $issuecert->userid);
+        if (!$user) {
+            print_error('nousersfound', 'moodle');
+        }
+
+        // If no text set get firstpage text.
+        if (empty($certtext)) {
+            $certtext = $this->get_instance()->certificatetext;
+        }
+        $certtext = format_text($certtext, FORMAT_HTML, array('noclean' => true));
+
+
+        $a = new stdClass();
+        $a->username = (fullname($user));
+        $a->idnumber = ($user->idnumber);
+        $a->firstname = ($user->firstname);
+        $a->lastname = ($user->lastname);
+        $a->email = ($user->email);
+        $a->icq = ($user->icq);
+        $a->skype = ($user->skype);
+        $a->yahoo = ($user->yahoo);
+        $a->aim = ($user->aim);
+        $a->msn = ($user->msn);
+        $a->phone1 = ($user->phone1);
+        $a->phone2 = ($user->phone2);
+        $a->institution = ($user->institution);
+        $a->department = ($user->department);
+        $a->address = ($user->address);
+        $a->city = ($user->city);
+
+        // Add userimage url only if have a picture.
+        if ($user->picture > 0) {
+            $a->userimage = $this->get_user_image_url($user);
+        } else {
+            $a->userimage = '';
+        }
+
+        if (!empty($user->country)) {
+            $a->country = get_string($user->country, 'countries');
+        } else {
+            $a->country = '';
+        }
+
+        // Formatting URL, if needed.
+        $url = $user->url;
+        if (!empty($url) && strpos($url, '://') === false) {
+            $url = 'http://' . $url;
+        }
+        $a->url = $url;
+
+        // Getting user custom profiles fields.
+        $userprofilefields = $this->get_user_profile_fields($user->id);
+        foreach ($userprofilefields as $key => $value) {
+            $key = 'profile_' . $key;
+            $a->$key = ($value);
+        }
+        // The course name never change form a certificate to another, useless
+        // text mark and atribbute, can be removed.
+        $a->coursename = ($this->get_instance()->coursename);
+        $a->grade = $this->get_grade($user->id);
+        $a->date = $this->get_date($issuecert, $user->id);
+        $a->outcome = $this->get_outcome($user->id);
+        $a->certificatecode = $issuecert->code;
+
+        // This code stay here only beace legacy support, coursehours variable was removed
+        // see issue 61 https://github.com/bozoh/moodle-mod_simplecertificate/issues/61.
+        if (isset($this->get_instance()->coursehours)) {
+            $a->hours = ($this->get_instance()->coursehours . ' ' . get_string('hours', 'simplecertificate'));
+        } else {
+            $a->hours = '';
+        }
+
+        $teachers = $this->get_teachers();
+        if (empty($teachers)) {
+            $teachers = '';
+        } else {
+            $t = array();
+            foreach ($teachers as $teacher) {
+                $t[] = content_to_text($teacher->rolename . ': ' . $teacher->username, FORMAT_MOODLE);
+            }
+            $a->teachers = implode("<br>", $t);
+        }
+
+        // Fetch user actitivy restuls.
+        $a->userresults = $this->get_user_results($issuecert->userid);
+
+        // Get User role name in course.
+        $userrolename = get_user_roles_in_course($user->id, $this->get_course()->id);
+        if ($userrolename) {
+            $a->userrolename = content_to_text($userrolename, FORMAT_MOODLE);
+        } else {
+            $a->userrolename = '';
+        }
+
+        // Get user enrollment start date
+        // see funtion  enrol_get_enrolment_end($courseid, $userid), which get enddate, not start.
+        $sql = "SELECT ue.timestart
+              FROM {user_enrolments} ue
+              JOIN {enrol} e ON (e.id = ue.enrolid AND e.courseid = :courseid)
+              JOIN {user} u ON u.id = ue.userid
+              WHERE ue.userid = :userid AND e.status = :enabled AND u.deleted = 0";
+
+        $params = array('enabled' => ENROL_INSTANCE_ENABLED, 'userid' => $user->id, 'courseid' => $this->get_course()->id);
+
+        $timestart = $DB->get_field_sql($sql, $params);
+        if ($timestart) {
+            $a->timestart = userdate($timestart, $this->get_instance()->timestartdatefmt);
+        } else {
+            $a->timestart = '';
+        }
+
+        $a = (array)$a;
+        $search = array();
+        $replace = array();
+        foreach ($a as $key => $value) {
+            $search[] = '{' . strtoupper($key) . '}';
+            // Due #148 bug, i must disable filters, because activities names {USERRESULTS}
+            // will be replaced by actitiy link, don't make sense put activity link
+            // in the certificate, only activity name and grade
+            // para=> false to remove the <div> </div>  form strings.
+            $replace[] = (string)$value;
+        }
+
+        if ($search) {
+            $certtext = str_replace($search, $replace, $certtext);
+        }
+
+        // Clear not setted  textmark.
+        $certtext = preg_replace('[\{(.*)\}]', "", $certtext);
+        $certtext = $this->remove_links(format_text($certtext, FORMAT_MOODLE));
+        $cetthtml = <<<EOF
+            <style>$rawscss</style>
+            $certtext
+EOF;
+        return $cetthtml;
     }
 
     // Auto link filter puts links in the certificate text,

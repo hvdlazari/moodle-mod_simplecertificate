@@ -43,7 +43,7 @@ class backup_simplecertificate_activity_structure_step extends backup_activity_s
         // Define each element separated.
         $certificate = new backup_nested_element('simplecertificate', array('id'), array(
                 'name', 'intro', 'introformat', 'timemodified', 'width', 'height', 'certificateimage',
-                'certificatetext', 'certificatetextformat', 'certificatetextx', 'certificatetexty',
+                'certificatetext', 'certificatetextformat', 'enablehtmlrender', 'rawscssrender', 'certificatetextx', 'certificatetexty',
                 'coursename', 'coursehours', 'outcome', 'certdate', 'certdatefmt', 'certgrade',
                 'gradefmt', 'emailfrom', 'emailothers', 'emailteachers', 'reportcert', 'delivery',
                 'requiredtime', 'printqrcode', 'qrcodefirstpage', 'codex', 'codey', 'enablesecondpage',
