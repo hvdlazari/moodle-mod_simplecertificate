@@ -37,6 +37,7 @@ use core_availability\info;
 use core_availability\info_module;
 use core\message\inbound\private_files_handler;
 
+define('CUSTOM_PATH_FONTS', $CFG->dirroot. '/mod/simplecertificate/fonts/');
 
 class simplecertificate {
     /**
@@ -107,6 +108,8 @@ class simplecertificate {
      * @var stdClass the current issued certificate
      */
     private $issuecert;
+
+    public $customfontlist;
 
     /**
      * Constructor for the base simplecertificate class.
@@ -1029,8 +1032,19 @@ class simplecertificate {
         // Writing text.
         $pdf->SetXY($this->get_instance()->certificatetextx, $this->get_instance()->certificatetexty);
 
+        if (isset($this->get_instance()->font) && $this->get_instance()->font) {
+            $fontname = $this->get_instance()->font;
+
+            if (!file_exists(\TCPDF_FONTS::_getfontpath() . $fontname)) {
+                $pdf->AddFont( $this->get_instance()->font, '', CUSTOM_PATH_FONTS . "{$fontname}.php");
+            }
+
+            $pdf->SetFont($fontname, '', $this->get_instance()->fontsize);
+        }
+
         if (isset($this->get_instance()->enablehtmlrender) && $this->get_instance()->enablehtmlrender) {
             $html = $this->get_certificate_html_text($issuecert, $this->get_instance()->certificatetext, $this->get_instance()->rawscssrender);
+
             $pdf->writeHTML($html);
         } else {
             $pdf->writeHTMLCell(0, 0, '', '', $this->get_certificate_text($issuecert, $this->get_instance()->certificatetext), 0, 0, 0,
@@ -1361,6 +1375,7 @@ class simplecertificate {
             $certtext = $this->get_instance()->certificatetext;
         }
         $certtext = format_text($certtext, FORMAT_HTML, array('noclean' => true));
+
 
         $a = new stdClass();
         $a->username = strip_tags(fullname($user));
@@ -2601,5 +2616,133 @@ EOF;
         if (!empty($event)) {
             $event->trigger();
         }
+    }
+
+    /**
+     * Return the list of possible fonts to use.
+     */
+    public static function get_fonts() {
+        global $CFG;
+
+        require_once($CFG->libdir . '/pdflib.php');
+
+        $arrfonts = [];
+        $pdf = new \pdf();
+        $fontfamilies = $pdf->get_font_families();
+
+        $customfamilies = simplecertificate::get_custom_font_families();
+
+        $fontfamilies = array_merge($fontfamilies, $customfamilies);
+
+        foreach ($fontfamilies as $fontfamily => $fontstyles) {
+            foreach ($fontstyles as $fontstyle) {
+                $fontstyle = strtolower($fontstyle);
+                if ($fontstyle == 'r') {
+                    $filenamewoextension = $fontfamily;
+                } else {
+                    $filenamewoextension = $fontfamily . $fontstyle;
+                }
+                $fullpath = \TCPDF_FONTS::_getfontpath() . $filenamewoextension;
+                $customfullpath = CUSTOM_PATH_FONTS . $filenamewoextension;
+                // Set the name of the font to null, the include next should then set this
+                // value, if it is not set then the file does not include the necessary data.
+                $name = null;
+                // Some files include a display name, the include next should then set this
+                // value if it is present, if not then $name is used to create the display name.
+                $displayname = null;
+                // Some of the TCPDF files include files that are not present, so we have to
+                // suppress warnings, this is the TCPDF libraries fault, grrr.
+                @include($fullpath . '.php');
+                @include($customfullpath . '.php');
+                // If no $name variable in file, skip it.
+                if (is_null($name)) {
+                    continue;
+                }
+                // Check if there is no display name to use.
+                if (is_null($displayname)) {
+                    // Format the font name, so "FontName-Style" becomes "Font Name - Style".
+                    $displayname = preg_replace("/([a-z])([A-Z])/", "$1 $2", $name);
+                    $displayname = preg_replace("/([a-zA-Z])-([a-zA-Z])/", "$1 - $2", $displayname);
+                }
+
+                $arrfonts[$filenamewoextension] = $displayname;
+            }
+        }
+        ksort($arrfonts);
+
+        return $arrfonts;
+    }
+
+    /**
+     * Return the list of possible font sizes to use.
+     */
+    public static function get_font_sizes() {
+        // Array to store the sizes.
+        $sizes = array();
+
+        for ($i = 1; $i <= 200; $i++) {
+            $sizes[$i] = $i;
+        }
+
+        return $sizes;
+    }
+
+    private static function get_custom_font_families() {
+        $customfontlist = simplecertificate::getCustomFontsList();
+        $families = array();
+        foreach ($customfontlist as $font) {
+            if (strpos($font, 'uni2cid') === 0) {
+                // This is not an font file.
+                continue;
+            }
+            if (strpos($font, 'cid0') === 0) {
+                // These do not seem to work with utf-8, better ignore them for now.
+                continue;
+            }
+            if (substr($font, -2) === 'bi') {
+                $family = substr($font, 0, -2);
+                if (in_array($family, $customfontlist)) {
+                    $families[$family]['BI'] = 'BI';
+                    continue;
+                }
+            }
+            if (substr($font, -1) === 'i') {
+                $family = substr($font, 0, -1);
+                if (in_array($family, $customfontlist)) {
+                    $families[$family]['I'] = 'I';
+                    continue;
+                }
+            }
+            if (substr($font, -1) === 'b') {
+                $family = substr($font, 0, -1);
+                if (in_array($family, $customfontlist)) {
+                    $families[$family]['B'] = 'B';
+                    continue;
+                }
+            }
+            // This must be a Family or incomplete set of fonts present.
+            $families[$font]['R'] = 'R';
+        }
+
+        // Sort everything consistently.
+        ksort($families);
+        foreach ($families as $k => $v) {
+            krsort($families[$k]);
+        }
+
+        return $families;
+    }
+
+    private static function getCustomFontsList() {
+        $customfontlist = [];
+        if (($fontsdir = opendir(CUSTOM_PATH_FONTS)) !== false) {
+            while (($file = readdir($fontsdir)) !== false) {
+                if (substr($file, -4) == '.php') {
+                    array_push($customfontlist, strtolower(basename($file, '.php')));
+                }
+            }
+            closedir($fontsdir);
+        }
+        return $customfontlist;
     }
 }

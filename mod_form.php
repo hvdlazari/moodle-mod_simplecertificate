@@ -28,6 +28,8 @@ class mod_simplecertificate_mod_form extends moodleform_mod {
     public function definition() {
         global $CFG;
 
+        require_once(dirname(__FILE__) . '/locallib.php');
+
         $mform =& $this->_form;
 
         // General options.
@@ -64,10 +66,25 @@ class mod_simplecertificate_mod_form extends moodleform_mod {
         $mform->addHelpButton('certificatetext', 'certificatetext', 'simplecertificate');
 
         $mform->addElement('selectyesno', 'enablehtmlrender', get_string('enablehtmlrender', 'simplecertificate'));
+        $mform->setAdvanced('enablehtmlrender');
         $mform->addHelpButton('enablehtmlrender', 'enablehtmlrender', 'simplecertificate');
 
         $mform->addElement('textarea', 'rawscssrender', get_string('rawscssrender', 'simplecertificate'));
+        $mform->setAdvanced('rawscssrender');
         $mform->addHelpButton('rawscssrender', 'rawscssrender', 'simplecertificate');
+
+        $mform->addElement('select', 'font', get_string('font', 'simplecertificate'), simplecertificate::get_fonts());
+        $mform->setType('font', PARAM_TEXT);
+        $mform->setDefault('font', 'times');
+        $mform->setAdvanced('font');
+        $mform->addHelpButton('font', 'font', 'simplecertificate');
+
+        $mform->addElement('select', 'fontsize', get_string('fontsize', 'simplecertificate'),
+            simplecertificate::get_font_sizes());
+        $mform->setType('fontsize', PARAM_INT);
+        $mform->setDefault('fontsize', 12);
+        $mform->setAdvanced('fontsize');
+        $mform->addHelpButton('fontsize', 'fontsize', 'simplecertificate');
 
         // Certificate Width.
         $mform->addElement('text', 'width', get_string('width', 'simplecertificate'), array('size' => '5'));
