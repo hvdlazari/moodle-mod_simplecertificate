@@ -16,10 +16,12 @@
                 <FIELD NAME="height" TYPE="int" LENGTH="4" NOTNULL="true" DEFAULT="210" SEQUENCE="false" PREVIOUS="width" NEXT="certificateimage"/>
                 <FIELD NAME="certificateimage" TYPE="text" NOTNULL="false" SEQUENCE="false" PREVIOUS="height" NEXT="certificatetext"/>
                 <FIELD NAME="certificatetext" TYPE="text" NOTNULL="true" SEQUENCE="false" PREVIOUS="certificateimage" NEXT="enablehtmlrender"/>
-                <FIELD NAME="certificatetextformat" TYPE="text" NOTNULL="true" SEQUENCE="false" PREVIOUS="rawscssrender" NEXT="certificatetextx"/>
-                <FIELD NAME="enablehtmlrender" TYPE="text" NOTNULL="true" SEQUENCE="false" PREVIOUS="certificatetextformat" NEXT="rawscssrender"/>
-                <FIELD NAME="rawscssrender" TYPE="text" NOTNULL="true" SEQUENCE="false" PREVIOUS="enablehtmlrender" NEXT="certificatetextformat"/>
-                <FIELD NAME="certificatetextx" TYPE="int" LENGTH="4" NOTNULL="true" DEFAULT="10" SEQUENCE="false" PREVIOUS="certificatetextx" NEXT="certificatetexty"/>
+                <FIELD NAME="certificatetextformat" TYPE="text" NOTNULL="true" SEQUENCE="false" PREVIOUS="certificatetext" NEXT="enablehtmlrender"/>
+                <FIELD NAME="enablehtmlrender" TYPE="text" NOTNULL="false" SEQUENCE="false" PREVIOUS="certificatetextformat" NEXT="rawscssrender"/>
+                <FIELD NAME="rawscssrender" TYPE="text" NOTNULL="false" SEQUENCE="false" PREVIOUS="enablehtmlrender" NEXT="font"/>
+                <FIELD NAME="font" TYPE="char" LENGTH="20" NOTNULL="false" SEQUENCE="false" PREVIOUS="rawscssrender" NEXT="fontsize"/>
+                <FIELD NAME="fontsize" TYPE="int" LENGTH="4" NOTNULL="false" SEQUENCE="false" PREVIOUS="font" NEXT="certificatetextx"/>
+                <FIELD NAME="certificatetextx" TYPE="int" LENGTH="4" NOTNULL="true" DEFAULT="10" SEQUENCE="false" PREVIOUS="certificatetextformat" NEXT="certificatetexty"/>
                 <FIELD NAME="certificatetexty" TYPE="int" LENGTH="4" NOTNULL="true" DEFAULT="50" SEQUENCE="false" PREVIOUS="certificatetextx" NEXT="coursename"/>
                 <FIELD NAME="coursename" TYPE="char" LENGTH="255" NOTNULL="true" SEQUENCE="false" PREVIOUS="certificatetexty" NEXT="outcome"/>
                 <FIELD NAME="outcome" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" PREVIOUS="coursename" NEXT="certdate"/>

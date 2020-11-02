@@ -58,6 +58,17 @@ $string['intro'] = 'Introduction';
 $string['printoutcome'] = 'Print Outcome';
 $string['printdate'] = 'Print Date';
 
+// Html Render
+$string['enablehtmlrender'] = 'Enable HTML rendering';
+$string['enablehtmlrender_help'] = 'If enabled, it renders the HTML tags defined in the {$a}';
+$string['rawscssrender'] = 'Custom CSS';
+$string['rawscssrender_help'] = 'CSS to be applied when rendering HTML tags enabled';
+
+$string['font'] = 'Font';
+$string['font_help'] = 'The font used when generating this element.';
+$string['fontsize'] = 'Size';
+$string['fontsize_help'] = 'The size of the font in points.';
+
 // Second Page.
 $string['secondpageoptions'] = 'Certificate Back page';
 $string['enablesecondpage'] = 'Enable Certificate Back page';

@@ -58,6 +58,17 @@ $string['intro'] = 'Introdução';
 $string['printoutcome'] = 'Imprimir resultado (Outcome)';
 $string['printdate'] = 'Tipo de data do certificado';
 
+// Html Render
+$string['enablehtmlrender'] = 'Habilitar renderização de HTML';
+$string['enablehtmlrender_help'] = 'Se habilitado, renderiza as tags HTML definidas no {$a}';
+$string['rawscssrender'] = 'CSS Personalizado';
+$string['rawscssrender_help'] = 'CSS a ser aplicado quando habilitado a renderização das tags HTML';
+
+$string['font'] = 'Fonte';
+$string['font_help'] = 'A fonte que será usada quando gerar o certificado';
+$string['fontsize'] = 'Tamanho';
+$string['fontsize_help'] = 'O tamanho da fonte em pontos.';
+
 // Second Page.
 $string['secondpageoptions'] = 'Página de Verso do certificado';
 $string['enablesecondpage'] = 'Ativar o verso do Certificado';

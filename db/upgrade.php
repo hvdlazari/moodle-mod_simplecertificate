@@ -441,7 +441,7 @@ function xmldb_simplecertificate_upgrade($oldversion = 0) {
         // Define fieldsto be added to simplecertificate.
         $table = new xmldb_table('simplecertificate');
 
-        $field = new xmldb_field('enablehtmlrender', XMLDB_TYPE_INTEGER, '1', null, XMLDB_NOTNULL, null, '0', 'certificatetextformat');
+        $field = new xmldb_field('enablehtmlrender', XMLDB_TYPE_INTEGER, '1', null, XMLDB_NOTNULL, null, '0', 'certificatetext');
 
         // Conditionally launch add field enablehtmlrender.
         if (!$dbman->field_exists($table, $field)) {
@@ -457,5 +457,28 @@ function xmldb_simplecertificate_upgrade($oldversion = 0) {
 
         upgrade_mod_savepoint(true, 2020101900, 'simplecertificate');
     }
+
+    if ($oldversion < 2020102900) {
+
+        // Define fields to be added to simplecertificate.
+        $table = new xmldb_table('simplecertificate');
+
+        $field = new xmldb_field('font', XMLDB_TYPE_CHAR, '20', null, null, null, null, 'rawscssrender');
+
+        // Conditionally launch add field font.
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        $field = new xmldb_field('fontsize', XMLDB_TYPE_INTEGER, '4', null, null, null, null, 'font');
+
+        // Conditionally launch add field fontsize.
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        upgrade_mod_savepoint(true, 2020102900, 'simplecertificate');
+    }
+
     return true;
 }

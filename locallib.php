@@ -37,6 +37,7 @@ use core_availability\info;
 use core_availability\info_module;
 use core\message\inbound\private_files_handler;
 
+define('CUSTOM_PATH_FONTS', $CFG->dirroot. '/mod/simplecertificate/fonts/');
 
 class simplecertificate {
     /**
@@ -107,6 +108,8 @@ class simplecertificate {
      * @var stdClass the current issued certificate
      */
     private $issuecert;
+
+    public $customfontlist;
 
     /**
      * Constructor for the base simplecertificate class.
@@ -1029,14 +1032,18 @@ class simplecertificate {
         // Writing text.
         $pdf->SetXY($this->get_instance()->certificatetextx, $this->get_instance()->certificatetexty);
 
+        if (isset($this->get_instance()->font) && $this->get_instance()->font) {
+            $pdf->SetFont($this->get_instance()->font, '', $this->get_instance()->fontsize);
+        }
+
         if (isset($this->get_instance()->enablehtmlrender) && $this->get_instance()->enablehtmlrender) {
             $html = $this->get_certificate_html_text($issuecert, $this->get_instance()->certificatetext, $this->get_instance()->rawscssrender);
-            $pdf->writeHTML($html);
+
+            $pdf->writeHTMLCell(0, 0, '', '', $html, 0, 0, 0,true, 'C');
         } else {
             $pdf->writeHTMLCell(0, 0, '', '', $this->get_certificate_text($issuecert, $this->get_instance()->certificatetext), 0, 0, 0,
                             true, 'C');
         }
-
 
         // Print QR code in first page (if enable).
         if (!empty($this->get_instance()->qrcodefirstpage) && !empty($this->get_instance()->printqrcode)) {
@@ -1361,6 +1368,7 @@ class simplecertificate {
             $certtext = $this->get_instance()->certificatetext;
         }
         $certtext = format_text($certtext, FORMAT_HTML, array('noclean' => true));
+
 
         $a = new stdClass();
         $a->username = strip_tags(fullname($user));
@@ -2600,6 +2608,86 @@ EOF;
 
         if (!empty($event)) {
             $event->trigger();
+        }
+    }
+
+    /**
+     * Return the list of possible fonts to use.
+     */
+    public static function get_fonts() {
+        global $CFG;
+
+        require_once($CFG->libdir . '/pdflib.php');
+
+        $arrfonts = [];
+        $pdf = new \pdf();
+        $fontfamilies = $pdf->get_font_families();
+
+        foreach ($fontfamilies as $fontfamily => $fontstyles) {
+            foreach ($fontstyles as $fontstyle) {
+                $fontstyle = strtolower($fontstyle);
+                if ($fontstyle == 'r') {
+                    $filenamewoextension = $fontfamily;
+                } else {
+                    $filenamewoextension = $fontfamily . $fontstyle;
+                }
+                $fullpath = \TCPDF_FONTS::_getfontpath() . $filenamewoextension;
+                // Set the name of the font to null, the include next should then set this
+                // value, if it is not set then the file does not include the necessary data.
+                $name = null;
+                // Some files include a display name, the include next should then set this
+                // value if it is present, if not then $name is used to create the display name.
+                $displayname = null;
+                // Some of the TCPDF files include files that are not present, so we have to
+                // suppress warnings, this is the TCPDF libraries fault, grrr.
+                @include($fullpath . '.php');
+                // If no $name variable in file, skip it.
+                if (is_null($name)) {
+                    continue;
+                }
+                // Check if there is no display name to use.
+                if (is_null($displayname)) {
+                    // Format the font name, so "FontName-Style" becomes "Font Name - Style".
+                    $displayname = preg_replace("/([a-z])([A-Z])/", "$1 $2", $name);
+                    $displayname = preg_replace("/([a-zA-Z])-([a-zA-Z])/", "$1 - $2", $displayname);
+                }
+
+                $arrfonts[$filenamewoextension] = $displayname;
+            }
+        }
+        ksort($arrfonts);
+
+        return $arrfonts;
+    }
+
+    /**
+     * Return the list of possible font sizes to use.
+     */
+    public static function get_font_sizes() {
+        // Array to store the sizes.
+        $sizes = array();
+
+        for ($i = 1; $i <= 200; $i++) {
+            $sizes[$i] = $i;
+        }
+
+        return $sizes;
+    }
+
+    public static function createCustomFonts() {
+        global $CFG;
+
+        if (($fontsdir = opendir(CUSTOM_PATH_FONTS)) !== false) {
+            while (($file = readdir($fontsdir)) !== false) {
+                if (substr($file, -4) == '.ttf') {
+                    if (!file_exists(\TCPDF_FONTS::_getfontpath() . substr($file, -4) . '.php')) {
+                        $fontfile = CUSTOM_PATH_FONTS . $file;
+                        @chmod(\TCPDF_FONTS::_getfontpath() , $CFG->directorypermissions);
+                        TCPDF_FONTS::addTTFfont($fontfile,'TrueTypeUnicode','',32);
+                    }
+                }
+            }
+            closedir($fontsdir);
         }
     }
 }
