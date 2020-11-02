@@ -128,6 +128,8 @@ class simplecertificate {
         $this->course = $course;
         // Temporary cache only lives for a single request - used to reduce db lookups.
         $this->cache = array();
+
+        simplecertificate::createCustomFonts();
     }
 
     /**
@@ -1033,25 +1035,17 @@ class simplecertificate {
         $pdf->SetXY($this->get_instance()->certificatetextx, $this->get_instance()->certificatetexty);
 
         if (isset($this->get_instance()->font) && $this->get_instance()->font) {
-            $fontname = $this->get_instance()->font;
-
-            if (!file_exists(\TCPDF_FONTS::_getfontpath() . $fontname)) {
-                $pdf->AddFont( $this->get_instance()->font, '', CUSTOM_PATH_FONTS . "{$fontname}.php");
-            }
-
-            $pdf->SetFont($fontname, '', $this->get_instance()->fontsize);
+            $pdf->SetFont($this->get_instance()->font, '', $this->get_instance()->fontsize);
         }
 
         if (isset($this->get_instance()->enablehtmlrender) && $this->get_instance()->enablehtmlrender) {
             $html = $this->get_certificate_html_text($issuecert, $this->get_instance()->certificatetext, $this->get_instance()->rawscssrender);
 
-//            $pdf->writeHTML($html);
             $pdf->writeHTMLCell(0, 0, '', '', $html, 0, 0, 0,true, 'C');
         } else {
             $pdf->writeHTMLCell(0, 0, '', '', $this->get_certificate_text($issuecert, $this->get_instance()->certificatetext), 0, 0, 0,
                             true, 'C');
         }
-
 
         // Print QR code in first page (if enable).
         if (!empty($this->get_instance()->qrcodefirstpage) && !empty($this->get_instance()->printqrcode)) {
@@ -2631,10 +2625,6 @@ EOF;
         $pdf = new \pdf();
         $fontfamilies = $pdf->get_font_families();
 
-        $customfamilies = simplecertificate::get_custom_font_families();
-
-        $fontfamilies = array_merge($fontfamilies, $customfamilies);
-
         foreach ($fontfamilies as $fontfamily => $fontstyles) {
             foreach ($fontstyles as $fontstyle) {
                 $fontstyle = strtolower($fontstyle);
@@ -2644,7 +2634,6 @@ EOF;
                     $filenamewoextension = $fontfamily . $fontstyle;
                 }
                 $fullpath = \TCPDF_FONTS::_getfontpath() . $filenamewoextension;
-                $customfullpath = CUSTOM_PATH_FONTS . $filenamewoextension;
                 // Set the name of the font to null, the include next should then set this
                 // value, if it is not set then the file does not include the necessary data.
                 $name = null;
@@ -2654,7 +2643,6 @@ EOF;
                 // Some of the TCPDF files include files that are not present, so we have to
                 // suppress warnings, this is the TCPDF libraries fault, grrr.
                 @include($fullpath . '.php');
-                @include($customfullpath . '.php');
                 // If no $name variable in file, skip it.
                 if (is_null($name)) {
                     continue;
@@ -2688,62 +2676,17 @@ EOF;
         return $sizes;
     }
 
-    private static function get_custom_font_families() {
-        $customfontlist = simplecertificate::getCustomFontsList();
-        $families = array();
-        foreach ($customfontlist as $font) {
-            if (strpos($font, 'uni2cid') === 0) {
-                // This is not an font file.
-                continue;
-            }
-            if (strpos($font, 'cid0') === 0) {
-                // These do not seem to work with utf-8, better ignore them for now.
-                continue;
-            }
-            if (substr($font, -2) === 'bi') {
-                $family = substr($font, 0, -2);
-                if (in_array($family, $customfontlist)) {
-                    $families[$family]['BI'] = 'BI';
-                    continue;
-                }
-            }
-            if (substr($font, -1) === 'i') {
-                $family = substr($font, 0, -1);
-                if (in_array($family, $customfontlist)) {
-                    $families[$family]['I'] = 'I';
-                    continue;
-                }
-            }
-            if (substr($font, -1) === 'b') {
-                $family = substr($font, 0, -1);
-                if (in_array($family, $customfontlist)) {
-                    $families[$family]['B'] = 'B';
-                    continue;
-                }
-            }
-            // This must be a Family or incomplete set of fonts present.
-            $families[$font]['R'] = 'R';
-        }
-
-        // Sort everything consistently.
-        ksort($families);
-        foreach ($families as $k => $v) {
-            krsort($families[$k]);
-        }
-
-        return $families;
-    }
-
-    private static function getCustomFontsList() {
-        $customfontlist = [];
+    private static function createCustomFonts() {
         if (($fontsdir = opendir(CUSTOM_PATH_FONTS)) !== false) {
             while (($file = readdir($fontsdir)) !== false) {
-                if (substr($file, -4) == '.php') {
-                    array_push($customfontlist, strtolower(basename($file, '.php')));
+                if (substr($file, -4) == '.ttf') {
+                    if (!file_exists(\TCPDF_FONTS::_getfontpath() . substr($file, -4) . '.php')) {
+                        $fontfile = CUSTOM_PATH_FONTS . $file;
+                        TCPDF_FONTS::addTTFfont($fontfile);
+                    }
                 }
             }
             closedir($fontsdir);
         }
-        return $customfontlist;
     }
 }
