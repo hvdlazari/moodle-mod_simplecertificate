@@ -2675,12 +2675,15 @@ EOF;
     }
 
     public static function createCustomFonts() {
+        global $CFG;
+
         if (($fontsdir = opendir(CUSTOM_PATH_FONTS)) !== false) {
             while (($file = readdir($fontsdir)) !== false) {
                 if (substr($file, -4) == '.ttf') {
                     if (!file_exists(\TCPDF_FONTS::_getfontpath() . substr($file, -4) . '.php')) {
                         $fontfile = CUSTOM_PATH_FONTS . $file;
-                        TCPDF_FONTS::addTTFfont($fontfile);
+                        @chmod(\TCPDF_FONTS::_getfontpath() , $CFG->directorypermissions);
+                        TCPDF_FONTS::addTTFfont($fontfile,'TrueTypeUnicode','',32);
                     }
                 }
             }
