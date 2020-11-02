@@ -30,6 +30,8 @@ class mod_simplecertificate_mod_form extends moodleform_mod {
 
         require_once(dirname(__FILE__) . '/locallib.php');
 
+        simplecertificate::createCustomFonts();
+
         $mform =& $this->_form;
 
         // General options.

@@ -128,8 +128,6 @@ class simplecertificate {
         $this->course = $course;
         // Temporary cache only lives for a single request - used to reduce db lookups.
         $this->cache = array();
-
-        simplecertificate::createCustomFonts();
     }
 
     /**
@@ -2676,7 +2674,7 @@ EOF;
         return $sizes;
     }
 
-    private static function createCustomFonts() {
+    public static function createCustomFonts() {
         if (($fontsdir = opendir(CUSTOM_PATH_FONTS)) !== false) {
             while (($file = readdir($fontsdir)) !== false) {
                 if (substr($file, -4) == '.ttf') {
