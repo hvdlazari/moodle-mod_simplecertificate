@@ -1045,7 +1045,8 @@ class simplecertificate {
         if (isset($this->get_instance()->enablehtmlrender) && $this->get_instance()->enablehtmlrender) {
             $html = $this->get_certificate_html_text($issuecert, $this->get_instance()->certificatetext, $this->get_instance()->rawscssrender);
 
-            $pdf->writeHTML($html);
+//            $pdf->writeHTML($html);
+            $pdf->writeHTMLCell(0, 0, '', '', $html, 0, 0, 0,true, 'C');
         } else {
             $pdf->writeHTMLCell(0, 0, '', '', $this->get_certificate_text($issuecert, $this->get_instance()->certificatetext), 0, 0, 0,
                             true, 'C');
